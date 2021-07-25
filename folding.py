@@ -118,7 +118,9 @@ class Bild:
 
         return False
 
-seed = Bild(Image.open("input/unfolded.png").convert('L'))
+seed = Bild(Image.open("input/unfolded.png")
+                 .resize((100, 100), resample=Image.NEAREST)
+                 .convert('L'))
 
 data = [seed]
 
