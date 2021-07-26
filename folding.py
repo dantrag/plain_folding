@@ -48,8 +48,8 @@ class Bild:
                     part2.append(point)
             if len(part1) > len(part2):
                 part1, part2 = part2, part1
-            if len(part1) / len(part2) >= threshold:
                 # perform folding
+            if len(part1) / len(self.nonzero) >= threshold:
                 folded = []
                 self.nonzero.clear()
                 for point in part1:
