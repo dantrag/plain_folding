@@ -4,7 +4,7 @@ from math import pi, sin, cos
 from PIL import Image
 import numpy as np
 
-from geometry import Point, Line
+from geometry import Point, Line, extract_contours, split_into_components, move_points_connected, bfs_unless
 
 class Bild:
     def __init__(self, image):
@@ -48,21 +48,76 @@ class Bild:
                     part2.append(point)
             if len(part1) > len(part2):
                 part1, part2 = part2, part1
-                # perform folding
             if len(part1) / len(self.nonzero) >= threshold:
+                # fold each connected component separately
+                pieces = split_into_components(set(part1))
                 folded = []
+                updates = {}
+                stationary_points = set()
+
+                for piece in pieces:
+                    points = set(piece)
+                    extracted_contours = extract_contours(points)
+                    if not extracted_contours:
+                        continue
+                    contour = set(extracted_contours[0])
+                    reflected_contour = set(move_points_connected(contour,
+                                                                  mapping=lambda p: axis.reflect(p)))
+                    reflected_interior = set()
+
+                    forward_map = {}
+                    backward_map = {}
+                    for point in piece:
+                        forward_map[point] = axis.reflect(point)
+                        if not forward_map[point] in backward_map:
+                            backward_map[forward_map[point]] = []
+                        backward_map[forward_map[point]].append(point)
+
+
+                    if len(backward_map) > len(reflected_contour):
+                        # start from points inside reflected contour to fill it
+                        seeds = []
+                        for point in piece:
+                            reflected = axis.reflect(point)
+                            if not reflected in reflected_contour:
+                                seeds.append(reflected)
+                       
+                        # find pixels inside reflected contour
+                        reflected_interior = bfs_unless(seeds, lambda p: p in reflected_contour or \
+                                                                         p.x < 0 or p.x >= self.h or \
+                                                                         p.y < 0 or p.y >= self.w)
+
+                    for point in list(reflected_interior.union(reflected_contour)):
+                        value = 0
+                        folded.append(point)
+                        if not point in backward_map:
+                            original_values = []
+                            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                                neighbour = Point(point.x + dx, point.y + dy)
+                                if neighbour in backward_map:
+                                    for p in backward_map[neighbour]:
+                                        original_values.append(self.pixels[p.x, p.y])
+                            if not original_values:
+                                continue
+                            else:
+                                value = max(set(original_values), key=original_values.count)
+                        else:
+                            original_values = [self.pixels[p.x, p.y] for p in backward_map[point]]
+                            value = max(set(original_values), key=original_values.count)
+
+                        updates[point] = value
+                        if point in backward_map:
+                            if point in backward_map[point]:
+                                stationary_points.add(point)
+                            else:
+                                for p in backward_map[point]:
+                                    updates[p] = -int(self.pixels[p.x, p.y])
+
                 self.nonzero.clear()
-                for point in part1:
-                    reflected = axis.reflect(point)
-                    reflected.round()
-                    if 0 <= reflected.x < self.h and 0 <= reflected.y < self.w:
-                        folded.append(reflected)
-                        value = self.pixels[point.x, point.y]    
-                        self.pixels[reflected.x, reflected.y] += value
-                        self.pixels[point.x, point.y] -= value
-                    else:
-                        print("Warning! Folded out of the frame")
                 for point in list(set(part1 + part2 + folded)):
+                    if point in updates:
+                        if not point in stationary_points:
+                            self.pixels[point.x, point.y] += updates[point]
                     if self.pixels[point.x, point.y] > 0:
                         self.nonzero.append(point)
 
