@@ -150,7 +150,7 @@ class Bild:
 
 
 seed = Bild(Image.open("input/unfolded.png")
-                 .resize((100, 100), resample=Image.NEAREST)
+                 .resize((200, 200), resample=Image.NEAREST)
                  .convert('L'))
 
 seed.center()
@@ -158,8 +158,6 @@ h = seed.x_max() - seed.x_min() + 1
 w = seed.y_max() - seed.y_min() + 1
 
 data = [seed]
-
-np.set_printoptions(threshold=np.inf)
 
 for i in range(100):
     while True:
