@@ -49,11 +49,14 @@ class Line:
     def eval(self, point):
         return self.a * point.x + self.b * point.y + self.c
 
-    def reflect(self, point):
+    def reflect(self, point, rounded=True):
         b2 = self.b * self.b
         a2 = self.a * self.a
         x = point.x
         y = point.y
-        return Point((x * (b2 - a2) - 2 * self.a * (self.b * y + self.c)) / (a2 + b2),
-                     (y * (a2 - b2) - 2 * self.b * (self.a * x + self.c)) / (a2 + b2))
+        reflected =  Point((x * (b2 - a2) - 2 * self.a * (self.b * y + self.c)) / (a2 + b2),
+                           (y * (a2 - b2) - 2 * self.b * (self.a * x + self.c)) / (a2 + b2))
+        if rounded:
+            reflected.round()
+        return reflected
 
