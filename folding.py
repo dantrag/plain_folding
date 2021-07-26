@@ -118,6 +118,11 @@ for i in range(100):
 
     h = max(h, image.x_max() - image.x_min() + 1)
     w = max(w, image.y_max() - image.y_min() + 1)
+    print(".", end='', flush=True)
+
+size = max(h, w)
+h = 1 << (size - 1).bit_length()
+w = h
 
 for i in range(len(data)):
     image = data[i]
