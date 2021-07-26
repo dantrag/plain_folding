@@ -136,7 +136,7 @@ def split_into_components(points: set, sort_by_size=True):
             components.append(component)
 
     if sort_by_size:
-        components.sort(key=lambda x: len(x))
+        components.sort(key=lambda x: -len(x))
     return components
 
 
