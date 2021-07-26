@@ -149,40 +149,93 @@ class Bild:
         return max(self.nonzero, key=lambda p: p.y).y
 
 
-seed = Bild(Image.open("input/unfolded.png")
-                 .resize((200, 200), resample=Image.NEAREST)
-                 .convert('L'))
+def performe_folding(input_img, num_examples):
+    seed = Bild(Image.open(input_img)
+                     .resize((200, 200), resample=Image.NEAREST)
+                     .convert('L'))
 
-seed.center()
-h = seed.x_max() - seed.x_min() + 1
-w = seed.y_max() - seed.y_min() + 1
+    seed.center()
+    h = seed.x_max() - seed.x_min() + 1
+    w = seed.y_max() - seed.y_min() + 1
 
-data = [seed]
+    data = [seed]
 
-for i in range(100):
-    while True:
-        seed = random.choice(data)
-        if seed.foldcount < 4:
-            break
-    image = seed.copy()
-    image.fold(0.2)
-    image.center()
-    data.append(image)
+    for i in range(num_examples):
+        while True:
+            seed = random.choice(data)
+            if seed.foldcount < 4:
+                break
+        image = seed.copy()
+        image.fold(0.2)
+        image.center()
+        data.append(image)
 
-    h = max(h, image.x_max() - image.x_min() + 1)
-    w = max(w, image.y_max() - image.y_min() + 1)
-    print(".", end='', flush=True)
+        h = max(h, image.x_max() - image.x_min() + 1)
+        w = max(w, image.y_max() - image.y_min() + 1)
+        print(".", end='', flush=True)
 
-size = max(h, w)
-h = 1 << (size - 1).bit_length()
-w = h
+    size = max(h, w)
+    h = 1 << (size - 1).bit_length()
+    w = h
 
-for i in range(len(data)):
-    image = data[i]
-    saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
-                                                     (image.h - h) // 2,
-                                                     image.w - (image.w - w + 1) // 2,
-                                                     image.h - (image.h - h + 1) // 2))
-    saved.save("output/image%d.png" % i)
+    fin_data=[]
+    for i in range(len(data)):
+        image = data[i]
+        saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
+                                                         (image.h - h) // 2,
+                                                         image.w - (image.w - w + 1) // 2,
+                                                         image.h - (image.h - h + 1) // 2))
+        saved.save("output/image%d.png" % i)
+        fin_data.append(np.array(saved))
 
-print(len(data))
+    print(len(data))
+    return fin_data
+
+
+
+def main():
+
+    folded_imgs=performe_folding("input/unfolded.png",100)
+
+    seed = Bild(Image.open("input/unfolded.png")
+                     .resize((200, 200), resample=Image.NEAREST)
+                     .convert('L'))
+
+    seed.center()
+    h = seed.x_max() - seed.x_min() + 1
+    w = seed.y_max() - seed.y_min() + 1
+
+    data = [seed]
+
+    for i in range(100):
+        while True:
+            seed = random.choice(data)
+            if seed.foldcount < 4:
+                break
+        image = seed.copy()
+        image.fold(0.2)
+        image.center()
+        data.append(image)
+
+        h = max(h, image.x_max() - image.x_min() + 1)
+        w = max(w, image.y_max() - image.y_min() + 1)
+        print(".", end='', flush=True)
+
+    size = max(h, w)
+    h = 1 << (size - 1).bit_length()
+    w = h
+
+    for i in range(len(data)):
+        image = data[i]
+        saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
+                                                         (image.h - h) // 2,
+                                                         image.w - (image.w - w + 1) // 2,
+                                                         image.h - (image.h - h + 1) // 2))
+        saved.save("output/image%d.png" % i)
+
+    print(len(data))
+
+
+
+if __name__== "__main__":
+  main()
