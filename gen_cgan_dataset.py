@@ -10,11 +10,13 @@ import cv2
 
 def main():
 
-    folded_imgs=performe_folding("input/unfolded_real_mask.png",1000)
+    folded_imgs=performe_folding("input/unfolded_real_mask.png",10)
     #folded_imgs=performe_folding("input/unfolded.png",10)
     c_img_data=[]
     d_img_data=[]
     for fold in folded_imgs:
+        print(fold.shape)
+        a=1/0
         c_img=fold.copy()
         c_img[c_img>0]=1
         c_img_data.append(np.expand_dims(c_img,axis=-1))

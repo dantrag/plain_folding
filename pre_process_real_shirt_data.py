@@ -45,7 +45,7 @@ def mask_shirt(img_org, dim):
 def main():
     #read in dataset
     dataset_path="datasets/shirt_dataset_20191217_1050_20200130_1612"
-    dim=(128,128)
+    dim=(256,256)
     file = open(dataset_path+ '.pkl','rb')
     dataset = pickle.load(file)
     file.close()
@@ -55,6 +55,18 @@ def main():
 
     cv2.imwrite("input/unfolded_real.png", unfolded_real)
     cv2.imwrite("input/unfolded_real_mask.png", unfolded_real_mask)
+
+    #make test dataset
+    test_data=[]
+    for entry in dataset:
+        img1=entry[0]
+        img2=entry[1]
+        test_data.append((cv2.resize(img1, dim, interpolation = cv2.INTER_AREA),mask_shirt(img1, dim)))
+        test_data.append((cv2.resize(img2, dim, interpolation = cv2.INTER_AREA),mask_shirt(img2, dim)))
+
+    with open("datasets/cgan_dataset_real_test.pkl", 'wb') as f:
+        pickle.dump(test_data, f)
+
 
 
 
