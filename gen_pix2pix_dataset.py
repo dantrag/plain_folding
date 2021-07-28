@@ -10,8 +10,10 @@ import os
 
 
 def main():
-
-    folded_imgs=performe_folding("input/unfolded_real_mask.png",1000)
+    num_examples=1000
+    max_fold_count=3
+    min_area_folding=0.2
+    folded_imgs=performe_folding("input/unfolded_real_mask.png",num_examples, max_fold_count, min_area_folding)
     #folded_imgs=performe_folding("input/unfolded.png",10)
     c_img_data=[]
     d_img_data=[]
@@ -30,26 +32,28 @@ def main():
         p2p= np.concatenate((d_img,c_img),axis=1)
         pix2pix_data.append(p2p)
 
+    folder_name="unfolding_" + str(num_examples) + "_fc_" + str(max_fold_count) + "_af_" +str(min_area_folding).replace(".","p")
+
     #save in folder sructure as grayscale image
-    if not os.path.exists("unfoldung"):
-        os.mkdir("unfoldung")
-    if not os.path.exists("unfoldung/train"):
-        os.mkdir("unfoldung/train")
-    if not os.path.exists("unfoldung/val"):
-        os.mkdir("unfoldung/val")
-    if not os.path.exists("unfoldung/test"):
-        os.mkdir("unfoldung/test")
+    if not os.path.exists(folder_name):
+        os.mkdir(folder_name)
+    if not os.path.exists(folder_name + "/train"):
+        os.mkdir(folder_name + "/train")
+    if not os.path.exists(folder_name + "/val"):
+        os.mkdir(folder_name + "/val")
+    if not os.path.exists(folder_name + "/test"):
+        os.mkdir(folder_name + "/test")
 
     #shuffel
     random.shuffle(pix2pix_data)
 
     for i, p2p in enumerate(pix2pix_data):
         if i <= len(pix2pix_data)*0.8:
-            cv2.imwrite("unfoldung/train/"+str(i)+'.jpg', p2p*255)
+            cv2.imwrite(folder_name + "/train/"+str(i)+'.jpg', p2p*255)
         if i > len(pix2pix_data)*0.8 and i < len(pix2pix_data)*0.9:
-            cv2.imwrite("unfoldung/val/"+str(i)+'.jpg', p2p*255)
+            cv2.imwrite(folder_name + "/val/"+str(i)+'.jpg', p2p*255)
         if i >= len(pix2pix_data)*0.9:
-            cv2.imwrite("unfoldung/test/"+str(i)+'.jpg', p2p*255)
+            cv2.imwrite(folder_name + "/test/"+str(i)+'.jpg', p2p*255)
 
 
 
