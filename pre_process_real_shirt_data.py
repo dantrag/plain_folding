@@ -35,7 +35,7 @@ def mask_shirt(img_org, dim):
     res = cv2.morphologyEx(mask_img,cv2.MORPH_OPEN,kernel)
     mask_img=cv2.resize(mask_img, dim, interpolation = cv2.INTER_AREA)
 
-    mask_img[mask_img>0]=10
+    mask_img[mask_img>0]=1
 
 
 
@@ -51,7 +51,7 @@ def main():
     file.close()
 
     unfolded_real=dataset[0][0]
-    unfolded_real_mask=mask_shirt(unfolded_real, dim)
+    unfolded_real_mask=(mask_shirt(unfolded_real, dim)*255).astype('uint')
 
     cv2.imwrite("input/unfolded_real.png", unfolded_real)
     cv2.imwrite("input/unfolded_real_mask.png", unfolded_real_mask)
