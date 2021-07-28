@@ -17,6 +17,11 @@
 * Matplotlib (matplotlib)
 * CV2 (opencv-python)
 
+#### Pix2Pix
+
+* torch
+* CV2 (opencv-python)
+
 ### Examples*
 <img alt="examples.png" src="examples.png" width=50% />
 
