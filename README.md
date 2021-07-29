@@ -37,13 +37,19 @@ python gen_pix2pix_dataset.py
 
 move unfolding dataset into pix2pix folder 
 ```
-mv unfolding_1000_fc_3_af_0p2 pytorch-CycleGAN-and-pix2pix/datasets/
+mv unfolding_1000_fc_3_af_0p2 pytorch-CycleGAN-and-pix2pix/datasets/unfolding_1000_fc_3_af_0p2/
 ```
 
-start pix2pix model training:
+start  model training:
 ```
 cd  pytorch-CycleGAN-and-pix2pix
 python train.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name pix2pix_unfolding_1000_fc_3_af_0p2 --model pix2pix --direction BtoA
+python train.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name cycle_gan_unfolding_1000_fc_3_af_0p2 --model cycle_gan
+```
+
+eval on real img data:
+```
+python test_on_real_imgs.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name pix2pix_unfolding_1000_fc_3_af_0p2 --model pix2pix 
 ```
 
 
