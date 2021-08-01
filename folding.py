@@ -149,7 +149,7 @@ class Bild:
         return max(self.nonzero, key=lambda p: p.y).y
 
 
-def performe_folding(input_img, num_examples):
+def performe_folding(input_img, num_examples, max_fold_count, min_fold_area):
     seed = Bild(Image.open(input_img)
                      .resize((200, 200), resample=Image.NEAREST)
                      .convert('L'))
@@ -163,10 +163,10 @@ def performe_folding(input_img, num_examples):
     for i in range(num_examples):
         while True:
             seed = random.choice(data)
-            if seed.foldcount < 4:
+            if seed.foldcount < max_fold_count:
                 break
         image = seed.copy()
-        image.fold(0.2)
+        image.fold(min_fold_area)
         image.center()
         data.append(image)
 
