@@ -30,7 +30,7 @@ def postprocess(image, truth):
     return image
 
 model_name = "unet_trained.h5"
-dataset_name = "dataset_test_unet.pkl"
+dataset_name = "dataset_validate_unet.pkl"
 if len(sys.argv) > 1:
     model_name = sys.argv[1]
     if len(sys.argv) > 2:
@@ -38,6 +38,10 @@ if len(sys.argv) > 1:
 
 model = tensorflow.keras.models.load_model(model_name)
 x, y = load_dataset(dataset_name)
+results = model.test_on_batch(x, y)
+print(model.metrics_names)
+print(results)
+
 y *= 16
 y = y.astype('uint8')
 y *= 10
@@ -76,5 +80,5 @@ for i in range(0, 20, 2):
     rows.append(x)
     data_example = np.concatenate([rows[y] for y in range(len(rows))], axis=0)
 
-cv2.imwrite("predict.png", data_example)
+cv2.imwrite("validation.png", data_example)
 
