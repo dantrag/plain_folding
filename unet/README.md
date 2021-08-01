@@ -23,5 +23,5 @@ Evaluation reports the model metrics and produces an image `validation.png` with
 Example output for a dataset with 10k images and max 2 folds:
 
 <p align="center">
- <img src="unet/validation_2folds_10k.png" />
+ <img src="validation_2folds_10k.png" />
 </p>
