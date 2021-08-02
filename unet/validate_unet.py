@@ -6,6 +6,7 @@ from PIL import Image
 import tensorflow
 from tensorflow import keras
 from tensorflow.keras.models import *
+from tensorflow.python.keras import backend as K
 
 from utils import load_dataset
 
@@ -36,9 +37,14 @@ if len(sys.argv) > 1:
     if len(sys.argv) > 2:
         dataset_name = sys.argv[2]
 
+config = tensorflow.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
+session = tensorflow.compat.v1.Session(config=config)
+K.set_session(session)
+
 model = tensorflow.keras.models.load_model(model_name)
 x, y = load_dataset(dataset_name)
-results = model.test_on_batch(x, y)
+results = model.evaluate(x, y, batch_size=1)
 print(model.metrics_names)
 print(results)
 
