@@ -29,16 +29,25 @@ class Bild:
         result.pixels = self.pixels.copy()
         return result
 
-    def fold(self, threshold):
+    def fold(self, threshold, xy_axis_bias):
         """Folds along a randomly generated axis
 
         Args:
             threshold: threshold for the ratio between two folding parts
+            xy_axis_bias: probability of a fold being along X or Y axis
         """
         attempts = 100
         while attempts:
             center = random.choice(self.nonzero)
-            axis = Line(center)
+            xy_aligned = random.random() <= xy_axis_bias
+            if xy_aligned:
+                if random.random() <= 0.5:
+                    axis = Line(center, Point(center.x + 1, center.y))
+                else:
+                    axis = Line(center, Point(center.x, center.y + 1))
+            else:
+                axis = Line(center)
+
             part1 = []
             part2 = []
             for point in self.nonzero:
@@ -149,7 +158,7 @@ class Bild:
         return max(self.nonzero, key=lambda p: p.y).y
 
 
-def performe_folding(input_img, num_examples, max_fold_count, min_fold_area):
+def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_folding_bias=0.0):
     seed = Bild(Image.open(input_img)
                      .resize((200, 200), resample=Image.NEAREST)
                      .convert('L'))
@@ -166,7 +175,7 @@ def performe_folding(input_img, num_examples, max_fold_count, min_fold_area):
             if seed.foldcount < max_fold_count:
                 break
         image = seed.copy()
-        image.fold(min_fold_area)
+        image.fold(threshold=min_fold_area, xy_axis_bias=xy_folding_bias)
         image.center()
         data.append(image)
 

@@ -13,7 +13,8 @@ def main():
     num_examples=1000
     max_fold_count=3
     min_area_folding=0.2
-    folded_imgs=performe_folding("input/unfolded_real_mask.png",num_examples, max_fold_count, min_area_folding)
+    xy_axis_bias=1.0
+    folded_imgs=performe_folding("input/unfolded_real_mask.png",num_examples, max_fold_count, min_area_folding, xy_axis_bias)
     #folded_imgs=performe_folding("input/unfolded.png",10)
     c_img_data=[]
     d_img_data=[]
