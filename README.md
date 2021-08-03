@@ -8,10 +8,6 @@
 * PIL (pillow)
 * NumPy (numpy)
 
-#### Dataset generation
-
-* Pickle (pickle)
-
 #### Dataset visualization
 
 * Matplotlib (matplotlib)
@@ -22,7 +18,7 @@
 * torch
 * CV2 (opencv-python)
 
-### Examples*
+### Data examples*
 <img alt="examples.png" src="examples.png" width=50% />
 
 \*generated images with inverted colors and black contour 
@@ -53,6 +49,6 @@ python test_on_real_imgs.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --n
 python test_on_real_imgs.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name cycle_gan_unfolding_1000_fc_3_af_0p2 --model cycle_gan 
 ```
 
+### Train U-Net model
 
-
-
+[U-Net training](unet/README.md)

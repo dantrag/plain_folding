@@ -29,25 +29,16 @@ class Bild:
         result.pixels = self.pixels.copy()
         return result
 
-    def fold(self, threshold, xy_axis_bias):
+    def fold(self, threshold):
         """Folds along a randomly generated axis
 
         Args:
             threshold: threshold for the ratio between two folding parts
-            xy_axis_bias: probability of a fold being along X or Y axis
         """
         attempts = 100
         while attempts:
             center = random.choice(self.nonzero)
-            xy_aligned = random.random() <= xy_axis_bias
-            if xy_aligned:
-                if random.random() <= 0.5:
-                    axis = Line(center, Point(center.x + 1, center.y))
-                else:
-                    axis = Line(center, Point(center.x, center.y + 1))
-            else:
-                axis = Line(center)
-
+            axis = Line(center)
             part1 = []
             part2 = []
             for point in self.nonzero:
@@ -158,7 +149,7 @@ class Bild:
         return max(self.nonzero, key=lambda p: p.y).y
 
 
-def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_folding_bias=0.0):
+def performe_folding(input_img, num_examples, max_folds=4, output_dir=None):
     seed = Bild(Image.open(input_img)
                      .resize((200, 200), resample=Image.NEAREST)
                      .convert('L'))
@@ -170,12 +161,14 @@ def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_
     data = [seed]
 
     for i in range(num_examples):
-        while True:
+        tries = 1000
+        while tries:
+            tries -= 1
             seed = random.choice(data)
-            if seed.foldcount < max_fold_count:
+            if seed.foldcount < max_folds:
                 break
         image = seed.copy()
-        image.fold(threshold=min_fold_area, xy_axis_bias=xy_folding_bias)
+        image.fold(0.2)
         image.center()
         data.append(image)
 
@@ -194,7 +187,8 @@ def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_
                                                          (image.h - h) // 2,
                                                          image.w - (image.w - w + 1) // 2,
                                                          image.h - (image.h - h + 1) // 2))
-        saved.save("output/image%d.png" % i)
+        if output_dir:
+            saved.save(output_dir + "/image%d.png" % i)
         fin_data.append(np.array(saved))
 
     print(len(data))
@@ -207,7 +201,7 @@ def main():
     folded_imgs=performe_folding("input/unfolded.png",100)
 
     seed = Bild(Image.open("input/unfolded.png")
-                     .resize((200, 200), resample=Image.NEAREST)
+                     .resize((100, 100), resample=Image.NEAREST)
                      .convert('L'))
 
     seed.center()

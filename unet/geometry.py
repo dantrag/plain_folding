@@ -39,12 +39,11 @@ class Line:
             p2 = Point(p1.x + sin(angle),
                        p1.y + cos(angle))
 
-        if p1.y == p2.y:
-            self.a = 0
-            self.b = 1
-            self.c = -p1.y
+        self.a = 1
+        if p1.x == p2.x:
+            self.b = 0
+            self.c = -p1.x
         else:
-            self.a = 1
             self.b = (p1.x - p2.x) / (p2.y - p1.y)
             self.c = -p1.x - self.b * p1.y
 
