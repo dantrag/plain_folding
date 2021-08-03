@@ -50,6 +50,7 @@ python train.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name cycle_ga
 eval on real img data:
 ```
 python test_on_real_imgs.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name pix2pix_unfolding_1000_fc_3_af_0p2 --model pix2pix 
+python test_on_real_imgs.py --dataroot ./datasets/unfolding_1000_fc_3_af_0p2 --name cycle_gan_unfolding_1000_fc_3_af_0p2 --model cycle_gan 
 ```
 
 
