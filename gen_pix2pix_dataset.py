@@ -14,7 +14,7 @@ def main():
     max_fold_count=3
     min_area_folding=0.2
     xy_axis_bias=1.0
-    folded_imgs=performe_folding("input/unfolded_real_mask.png",num_examples, max_fold_count, min_area_folding, xy_axis_bias)
+    folded_imgs=performe_folding("input/unfolded_real_color_mask.png",num_examples, max_fold_count, min_area_folding, xy_axis_bias)
     #folded_imgs=performe_folding("input/unfolded.png",10)
     c_img_data=[]
     d_img_data=[]
@@ -33,7 +33,7 @@ def main():
         p2p= np.concatenate((d_img,c_img),axis=1)
         pix2pix_data.append(p2p)
 
-    folder_name="unfolding_" + str(num_examples) + "_fc_" + str(max_fold_count) + "_af_" +str(min_area_folding).replace(".","p")
+    folder_name="unfolding_color_" + str(num_examples) + "_fc_" + str(max_fold_count) + "_af_" +str(min_area_folding).replace(".","p")
 
     #save in folder sructure as grayscale image
     if not os.path.exists(folder_name):
