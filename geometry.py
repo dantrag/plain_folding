@@ -7,6 +7,18 @@ class Point:
         self.x = x
         self.y = y
 
+    def __add__(self, other):
+        return Point(self.x + other.x,
+                     self.y + other.y)
+
+    def __sub__(self, other):
+        return Point(self.x - other.x,
+                     self.y - other.y)
+
+    def __mul__(self, factor):
+        return Point(self.x * factor,
+                     self.y * factor)
+
     def __copy__(self):
         return Point(self.x, self.y)
 
@@ -28,6 +40,9 @@ class Point:
     def round(self):
         self.x = int(round(self.x))
         self.y = int(round(self.y))
+
+    def closer_than(self, point, distance):
+        return (self.x - point.x) ** 2 + (self.y - point.y) ** 2 < distance ** 2
 
 class Line:
     def __init__(self, p1, p2 = None):
@@ -61,6 +76,10 @@ class Line:
         if rounded:
             reflected.round()
         return reflected
+
+    def closer_than(self, point, distance):
+        return (self.a * point.x + self.b * point.y + self.c) ** 2 / \
+               (self.a ** 2 + self.b ** 2) < distance ** 2
 
 def graph_from_points(points: set):
     graph = {}
