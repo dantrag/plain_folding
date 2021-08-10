@@ -2,47 +2,8 @@ import random
 from math import pi, sin, cos
 from collections import deque
 
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __add__(self, other):
-        return Point(self.x + other.x,
-                     self.y + other.y)
-
-    def __sub__(self, other):
-        return Point(self.x - other.x,
-                     self.y - other.y)
-
-    def __mul__(self, factor):
-        return Point(self.x * factor,
-                     self.y * factor)
-
-    def __copy__(self):
-        return Point(self.x, self.y)
-
-    def __deepcopy__(self):
-        return self.copy()
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
-
-    def __hash__(self):
-        return hash((self.x, self.y))
-
-    def __str__(self):
-        return str((self.x, self.y))
-
-    def __repr__(self):
-        return str((self.x, self.y))
-
-    def round(self):
-        self.x = int(round(self.x))
-        self.y = int(round(self.y))
-
-    def closer_than(self, point, distance):
-        return (self.x - point.x) ** 2 + (self.y - point.y) ** 2 < distance ** 2
+def points_closer_than(point1, point2, distance):
+    return (point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 < distance ** 2
 
 class Line:
     def __init__(self, p1, p2 = None):
@@ -51,39 +12,40 @@ class Line:
         if p2 is None:
             # construct the second point from a random angle
             angle = random.random() * pi
-            p2 = Point(p1.x + sin(angle),
-                       p1.y + cos(angle))
+            p2 = (p1[0] + sin(angle),
+                  p1[1] + cos(angle))
 
-        if p1.y == p2.y:
+        if p1[1] == p2[1]:
             self.a = 0
             self.b = 1
-            self.c = -p1.y
+            self.c = -p1[1]
         else:
             self.a = 1
-            self.b = (p1.x - p2.x) / (p2.y - p1.y)
-            self.c = -p1.x - self.b * p1.y
+            self.b = (p1[0] - p2[0]) / (p2[1] - p1[1])
+            self.c = -p1[0] - self.b * p1[1]
 
     def eval(self, point):
-        return self.a * point.x + self.b * point.y + self.c
+        return self.a * point[0] + self.b * point[1] + self.c
 
     def reflect(self, point, rounded=True):
         b2 = self.b * self.b
         a2 = self.a * self.a
-        x = point.x
-        y = point.y
-        reflected =  Point((x * (b2 - a2) - 2 * self.a * (self.b * y + self.c)) / (a2 + b2),
-                           (y * (a2 - b2) - 2 * self.b * (self.a * x + self.c)) / (a2 + b2))
+        x = point[0]
+        y = point[1]
+        reflected =  ((x * (b2 - a2) - 2 * self.a * (self.b * y + self.c)) / (a2 + b2),
+                      (y * (a2 - b2) - 2 * self.b * (self.a * x + self.c)) / (a2 + b2))
         if rounded:
-            reflected.round()
+            reflected = (round(reflected[0]),
+                         round(reflected[1]))
         return reflected
 
     def closer_than(self, point, distance):
-        return (self.a * point.x + self.b * point.y + self.c) ** 2 / \
+        return (self.a * point[0] + self.b * point[1] + self.c) ** 2 / \
                (self.a ** 2 + self.b ** 2) < distance ** 2
 
 # Cubic Bezier curve wrapper class
 class Bezier:
-    def __init__(self, P0: Point, P1: Point, P2: Point, P3: Point):
+    def __init__(self, P0, P1, P2, P3):
         """Constructor from four control points
         """
         self.p0 = P0
@@ -99,16 +61,17 @@ class Bezier:
                 self.p2 * (1 - t) * 3 * t ** 2 + \
                 self.p3 * t ** 3
         """
-        point = Point(self.p0.x * (1 - t) ** 3 + \
-                      self.p1.x * (1 - t) ** 2 * 3 * t + \
-                      self.p2.x * (1 - t) * 3 * t ** 2 + \
-                      self.p3.x * t ** 3,
-                      self.p0.y * (1 - t) ** 3 + \
-                      self.p1.y * (1 - t) ** 2 * 3 * t + \
-                      self.p2.y * (1 - t) * 3 * t ** 2 + \
-                      self.p3.y * t ** 3)
+        point = (self.p0[0] * (1 - t) ** 3 + \
+                 self.p1[0] * (1 - t) ** 2 * 3 * t + \
+                 self.p2[0] * (1 - t) * 3 * t ** 2 + \
+                 self.p3[0] * t ** 3,
+                 self.p0[1] * (1 - t) ** 3 + \
+                 self.p1[1] * (1 - t) ** 2 * 3 * t + \
+                 self.p2[1] * (1 - t) * 3 * t ** 2 + \
+                 self.p3[1] * t ** 3)
         if rounded:
-            point.round()
+            point = (round(point[0]),
+                     round(point[1]))
         return point
 
 def graph_from_points(points: set):
@@ -116,7 +79,7 @@ def graph_from_points(points: set):
     for p in points:
         graph[p] = []
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            neighbour = Point(p.x + dx, p.y + dy)
+            neighbour = (p[0] + dx, p[1] + dy)
             if neighbour in points:
                 graph[p].append(neighbour)
     return graph
@@ -148,19 +111,19 @@ def move_points_connected(points: set, mapping):
 
     for p in graph.keys():
         for neighbour in graph[p]:
-            distance = max(abs(neighbour.x - p.x), abs(neighbour.y - p.y))
+            distance = max(abs(neighbour[0] - p[0]), abs(neighbour[1] - p[1]))
             if distance > 1:
                 # need to fill the gap
-                dx = (neighbour.x - p.x) / distance
-                dy = (neighbour.y - p.y) / distance
+                dx = (neighbour[0] - p[0]) / distance
+                dy = (neighbour[1] - p[1]) / distance
                 for i in range(1, distance):
-                    new_x = int(round(p.x + dx * i))
-                    new_y = int(round(p.y + dy * i))
-                    new_p = Point(new_x, new_y)
+                    new_x = int(round(p[0] + dx * i))
+                    new_y = int(round(p[1] + dy * i))
+                    new_p = (new_x, new_y)
                     if not new_p in graph:
                         graph[new_p] = []
                     for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                        neighbour = Point(new_p.x + dx, new_p.y + dy)
+                        neighbour = (new_p[0] + dx, new_p[1] + dy)
                         if neighbour in graph:
                             graph[new_p].append(neighbour)
     return graph.keys()
@@ -174,7 +137,7 @@ def bfs_unless(starts, unless_what):
     while q:
         point = q.popleft()
         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            neighbour = Point(point.x + dx, point.y + dy)
+            neighbour = (point[0] + dx, point[1] + dy)
             if not neighbour in visited:
                 if not unless_what(neighbour):
                     visited.add(neighbour)
@@ -232,7 +195,7 @@ def extract_contours(points: set):
     for p in points:
         for dx in {-1, 0, 1}:
             for dy in {-1, 0, 1}:
-                neighbour = Point(p.x + dx, p.y + dy)
+                neighbour = (p[0] + dx, p[1] + dy)
                 if not neighbour in points:
                     # this is a borderline point
                     border_points.add(p)

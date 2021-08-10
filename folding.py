@@ -18,7 +18,7 @@ class Bild:
             for j in range(self.w):
                 self.pixels[i, j] = image.getpixel((j, i))
                 if self.pixels[i, j] != 0:
-                    self.nonzero.append(Point(i, j))
+                    self.nonzero.append((i, j))
 
     def copy(self):
         result = Bild(Image.new('L', (0, 0)))
@@ -40,13 +40,13 @@ class Bild:
         while attempts:
             attempts -= 1
             center = random.choice(self.nonzero)
-            center = Point(center.x + 0.5, center.y + 0.5)
+            center = (center[0] + 0.5, center[1] + 0.5)
             xy_aligned = random.random() <= xy_axis_bias
             if xy_aligned:
                 if random.random() <= 0.5:
-                    axis = Line(center, Point(center.x + 1, center.y))
+                    axis = Line(center, (center[0] + 1, center[1]))
                 else:
-                    axis = Line(center, Point(center.x, center.y + 1))
+                    axis = Line(center, (center[0], center[1] + 1))
             else:
                 axis = Line(center)
 
@@ -96,8 +96,8 @@ class Bild:
                        
                         # find pixels inside reflected contour
                         reflected_interior = bfs_unless(seeds, lambda p: p in reflected_contour or \
-                                                                         p.x < 0 or p.x >= self.h or \
-                                                                         p.y < 0 or p.y >= self.w)
+                                                                         p[0] < 0 or p[0] >= self.h or \
+                                                                         p[1] < 0 or p[1] >= self.w)
 
                     for point in list(reflected_interior.union(reflected_contour)):
                         value = 0
@@ -105,31 +105,31 @@ class Bild:
                         if not point in backward_map:
                             original_values = []
                             for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                                neighbour = Point(point.x + dx, point.y + dy)
+                                neighbour = (point[0] + dx, point[1] + dy)
                                 if neighbour in backward_map:
                                     for p in backward_map[neighbour]:
-                                        original_values.append(self.pixels[p.x, p.y])
+                                        original_values.append(self.pixels[p[0], p[1]])
                             if not original_values:
                                 continue
                             else:
                                 value = max(set(original_values), key=original_values.count)
                         else:
-                            original_values = [self.pixels[p.x, p.y] for p in backward_map[point]]
+                            original_values = [self.pixels[p[0], p[1]] for p in backward_map[point]]
                             value = max(set(original_values), key=original_values.count)
 
                         updates[point] = value
                         if point in backward_map:
                             if point in backward_map[point]:
                                 stationary_points.add(point)
-                                updates[point] = self.pixels[point.x, point.y]
+                                updates[point] = self.pixels[point[0], point[1]]
                             else:
                                 for p in backward_map[point]:
-                                    updates[p] = -int(self.pixels[p.x, p.y])
+                                    updates[p] = -int(self.pixels[p[0], p[1]])
 
                     part2_set = set(part2)
                     for point in contour:
                         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                                neighbour = Point(point.x + dx, point.y + dy)
+                                neighbour = (point[0] + dx, point[1] + dy)
                                 if neighbour in part2_set and \
                                    not neighbour in updates:
                                     stationary_points.add(neighbour)
@@ -140,10 +140,10 @@ class Bild:
                 for point in list(set(part1 + part2 + folded)):
                     if point in updates:
                         if not point in stationary_points:
-                            self.pixels[point.x, point.y] += updates[point]
+                            self.pixels[point[0], point[1]] += updates[point]
                         else:
-                            self.pixels[point.x, point.y] *= 2
-                    if self.pixels[point.x, point.y] > 0:
+                            self.pixels[point[0], point[1]] *= 2
+                    if self.pixels[point[0], point[1]] > 0:
                         self.nonzero.append(point)
 
                 self.foldcount += 1
@@ -174,7 +174,7 @@ class Bild:
                 seed = random.choice(contour)
                 is_separated_well = True
                 for previous_seed in seeds:
-                    if seed.closer_than(previous_seed, resolution):
+                    if points_closer_than(seed, previous_seed, resolution):
                         is_separated_well = False
                         break
                 if is_separated_well:
@@ -190,18 +190,18 @@ class Bild:
             nonzero_value = 0
             size = 0
             for i in range(resolution // 2 + 1):
-                slice = [Point(x, seed.y - i) for x in range(seed.x - i,
-                                                             seed.x + i)] +\
-                        [Point(x, seed.y + i) for x in range(seed.x - i + 1,
-                                                             seed.x + i + 1)] +\
-                        [Point(seed.x - i, y) for y in range(seed.y - i + 1,
-                                                             seed.y + i + 1)] +\
-                        [Point(seed.x + i, y) for y in range(seed.y - i,
-                                                             seed.y + i)]
+                slice = [(x, seed[1] - i) for x in range(seed[0] - i,
+                                                        seed[0] + i)] +\
+                        [(x, seed[1] + i) for x in range(seed[0] - i + 1,
+                                                        seed[0] + i + 1)] +\
+                        [(seed[0] - i, y) for y in range(seed[1] - i + 1,
+                                                        seed[1] + i + 1)] +\
+                        [(seed[0] + i, y) for y in range(seed[1] - i,
+                                                        seed[1] + i)]
                 min_value = 256
                 max_value = 0
                 for point in slice:
-                    value = self.pixels[point.x, point.y]
+                    value = self.pixels[point[0], point[1]]
                     if value > 0:
                         min_value = min(value, min_value)
                         max_value = max(value, max_value)
@@ -227,9 +227,9 @@ class Bild:
             original_contour = set()
             original_filled = set()
 
-            for x in range(seed.x - size + 1, seed.x + size):
-                for y in range(seed.y - size + 1, seed.y + size):
-                    point = Point(x, y)
+            for x in range(seed[0] - size + 1, seed[0] + size):
+                for y in range(seed[1] - size + 1, seed[1] + size):
+                    point = (x, y)
                     if point in contour:
                         original_contour.add(point)
                     if self.pixels[x, y] > 0:
@@ -281,8 +281,8 @@ class Bild:
 
             def apply_new_curve(curve: Bezier):
                 def in_bounds(point):
-                    return seed.x - size + 1 <= point.x < seed.x + size and \
-                           seed.y - size + 1 <= point.y < seed.y + size
+                    return seed[0] - size + 1 <= point[0] < seed[0] + size and \
+                           seed[1] - size + 1 <= point[1] < seed[1] + size
 
                 curve_pixels = set()
                 for t in np.linspace(0, 1, (size * 2 + 1) * 5):
@@ -340,8 +340,10 @@ class Bild:
                 factor = (min_factor + max_factor) / 2
                 curve = Bezier(
                       best_curve.p0,
-                      best_curve.p0 + (best_curve.p1 - best_curve.p0) * factor,
-                      best_curve.p3 + (best_curve.p2 - best_curve.p3) * factor,
+                      (best_curve.p0[0] + (best_curve.p1[0] - best_curve.p0[0]) * factor,
+                       best_curve.p0[1] + (best_curve.p1[1] - best_curve.p0[1]) * factor),
+                      (best_curve.p3[0] + (best_curve.p2[0] - best_curve.p3[0]) * factor,
+                       best_curve.p3[1] + (best_curve.p2[1] - best_curve.p3[1]) * factor),
                       best_curve.p3)
                 filled = apply_new_curve(curve)
                 if abs(len(filled) - integral) <= integral_tolerance:
@@ -355,10 +357,10 @@ class Bild:
                 print("Binary search failed")
                 continue
             
-            for x in range(seed.x - size + 1, seed.x + size):
-                for y in range(seed.y - size + 1, seed.y + size):
-                    if Point(x, y) in result:
-                        self.pixels[x, y] = 50
+            for x in range(seed[0] - size + 1, seed[0] + size):
+                for y in range(seed[1] - size + 1, seed[1] + size):
+                    if (x, y) in result:
+                        self.pixels[x, y] = 200
                     else:
                         self.pixels[x, y] = 0
 
@@ -369,19 +371,19 @@ class Bild:
         self.pixels = np.roll(self.pixels, deltax, axis=0)
         self.pixels = np.roll(self.pixels, deltay, axis=1)
 
-        self.nonzero = [Point(p.x + deltax, p.y + deltay) for p in self.nonzero]
+        self.nonzero = [(p[0] + deltax, p[1] + deltay) for p in self.nonzero]
 
     def x_min(self):
-        return min(self.nonzero, key=lambda p: p.x).x
+        return min(self.nonzero, key=lambda p: p[0])[0]
 
     def y_min(self):
-        return min(self.nonzero, key=lambda p: p.y).y
+        return min(self.nonzero, key=lambda p: p[1])[1]
 
     def x_max(self):
-        return max(self.nonzero, key=lambda p: p.x).x
+        return max(self.nonzero, key=lambda p: p[0])[0]
 
     def y_max(self):
-        return max(self.nonzero, key=lambda p: p.y).y
+        return max(self.nonzero, key=lambda p: p[1])[1]
 
 
 def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_folding_bias=0.0):
