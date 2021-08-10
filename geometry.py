@@ -152,6 +152,22 @@ def bfs_unless(starts, unless_what):
 
     return visited
 
+def bfs_distances(graph, starts):
+    q = deque()
+    distances = {}
+    for start in starts:
+        q.append(start)
+        distances[start] = 0
+
+    while q:
+        point = q.popleft()
+        for neighbour in graph[point]:
+            if not neighbour in distances:
+                distances[neighbour] = distances[point] + 1
+                q.append(neighbour)
+
+    return distances
+
 def split_into_components(points: set, sort_by_size=True):
     graph = graph_from_points(points)
 
