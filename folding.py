@@ -442,10 +442,10 @@ def main():
 
     data = [seed]
 
-    for i in range(10):
+    for i in range(100):
         while True:
             seed = random.choice(data)
-            if seed.foldcount < 4:
+            if seed.foldcount < 3:
                 break
         image = seed.copy()
         image.fold(0.2, xy_axis_bias=True)
@@ -462,6 +462,7 @@ def main():
 
     for i in range(len(data)):
         image = data[i]
+        image.perturb(20, 20, 5)
         saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
                                                          (image.h - h) // 2,
                                                          image.w - (image.w - w + 1) // 2,
