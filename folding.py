@@ -39,6 +39,7 @@ class Bild:
         attempts = 100
         while attempts:
             center = random.choice(self.nonzero)
+            center = Point(center.x + 0.5, center.y + 0.5)
             xy_aligned = random.random() <= xy_axis_bias
             if xy_aligned:
                 if random.random() <= 0.5:
@@ -118,15 +119,28 @@ class Bild:
                         if point in backward_map:
                             if point in backward_map[point]:
                                 stationary_points.add(point)
+                                updates[point] = self.pixels[point.x, point.y]
                             else:
                                 for p in backward_map[point]:
                                     updates[p] = -int(self.pixels[p.x, p.y])
+
+                    part2_set = set(part2)
+                    for point in contour:
+                        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                                neighbour = Point(point.x + dx, point.y + dy)
+                                if neighbour in part2_set and \
+                                   not neighbour in updates:
+                                    stationary_points.add(neighbour)
+                                    updates[neighbour] = 0
+                                    
 
                 self.nonzero.clear()
                 for point in list(set(part1 + part2 + folded)):
                     if point in updates:
                         if not point in stationary_points:
                             self.pixels[point.x, point.y] += updates[point]
+                        else:
+                            self.pixels[point.x, point.y] *= 2
                     if self.pixels[point.x, point.y] > 0:
                         self.nonzero.append(point)
 
