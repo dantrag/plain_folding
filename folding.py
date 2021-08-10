@@ -310,6 +310,11 @@ class Bild:
                 tries -= 1
                 P1 = random.choice(sampling_area)
                 P2 = random.choice(sampling_area)
+                if size > min(self.h, self.w) / 20:
+                    P1 = (P1[0] / 2 + start[0] / 2,
+                        P1[1] / 2 + start[1] / 2)
+                    P2 = (P2[0] / 2 + finish[0] / 2,
+                        P2[1] / 2 + finish[1] / 2)
                 curve = Bezier(start, P1, P2, finish)
                 integral = len(apply_new_curve(curve))
                 if integral >= len(original_filled):
