@@ -81,6 +81,36 @@ class Line:
         return (self.a * point.x + self.b * point.y + self.c) ** 2 / \
                (self.a ** 2 + self.b ** 2) < distance ** 2
 
+# Cubic Bezier curve wrapper class
+class Bezier:
+    def __init__(self, P0: Point, P1: Point, P2: Point, P3: Point):
+        """Constructor from four control points
+        """
+        self.p0 = P0
+        self.p1 = P1
+        self.p2 = P2
+        self.p3 = P3
+
+    def evaluate(self, t: float, rounded=True):
+        """Evaluates the curve at a parameter t in [0, 1]
+        
+        point = self.p0 * (1 - t) ** 3 + \
+                self.p1 * (1 - t) ** 2 * 3 * t + \
+                self.p2 * (1 - t) * 3 * t ** 2 + \
+                self.p3 * t ** 3
+        """
+        point = Point(self.p0.x * (1 - t) ** 3 + \
+                      self.p1.x * (1 - t) ** 2 * 3 * t + \
+                      self.p2.x * (1 - t) * 3 * t ** 2 + \
+                      self.p3.x * t ** 3,
+                      self.p0.y * (1 - t) ** 3 + \
+                      self.p1.y * (1 - t) ** 2 * 3 * t + \
+                      self.p2.y * (1 - t) * 3 * t ** 2 + \
+                      self.p3.y * t ** 3)
+        if rounded:
+            point.round()
+        return point
+
 def graph_from_points(points: set):
     graph = {}
     for p in points:
