@@ -2,6 +2,9 @@ import random
 from math import pi, sin, cos
 from collections import deque
 
+bezier_coefficients = {}
+pixel_increments = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
 def points_closer_than(point1, point2, distance):
     return (point1[0] - point2[0]) ** 2 + (point1[1] - point2[1]) ** 2 < distance ** 2
 
@@ -53,6 +56,31 @@ class Bezier:
         self.p2 = P2
         self.p3 = P3
 
+    def calculate(self, num_points, rounded=True):
+        points = set()
+        for n in bezier_coefficients.keys():
+            if n >= num_points:
+                num_points = n
+                break
+        if num_points > max(bezier_coefficients.keys()):
+            num_points = max(bezier_coefficients.keys())
+
+        coefficients = bezier_coefficients[num_points]
+        for i in range(num_points):
+            a = coefficients[i][0]
+            b = coefficients[i][1]
+            c = coefficients[i][2]
+            d = coefficients[i][3]
+            point = (self.p0[0] * a + self.p1[0] * b + self.p2[0] * c + self.p3[0] * d,
+                 self.p0[1] * a + self.p1[1] * b + self.p2[1] * c + self.p3[1] * d)
+
+            if rounded:
+                point = (round(point[0]),
+                         round(point[1]))
+            points.add(point)
+
+        return points
+    
     def evaluate(self, t: float, rounded=True):
         """Evaluates the curve at a parameter t in [0, 1]
         
@@ -61,14 +89,13 @@ class Bezier:
                 self.p2 * (1 - t) * 3 * t ** 2 + \
                 self.p3 * t ** 3
         """
-        point = (self.p0[0] * (1 - t) ** 3 + \
-                 self.p1[0] * (1 - t) ** 2 * 3 * t + \
-                 self.p2[0] * (1 - t) * 3 * t ** 2 + \
-                 self.p3[0] * t ** 3,
-                 self.p0[1] * (1 - t) ** 3 + \
-                 self.p1[1] * (1 - t) ** 2 * 3 * t + \
-                 self.p2[1] * (1 - t) * 3 * t ** 2 + \
-                 self.p3[1] * t ** 3)
+        tt = 1 - t
+        a = tt * tt * tt
+        b = tt * tt * t * 3
+        c = tt * t * t * 3
+        d = t * t * t
+        point = (self.p0[0] * a + self.p1[0] * b + self.p2[0] * c + self.p3[0] * d,
+                 self.p0[1] * a + self.p1[1] * b + self.p2[1] * c + self.p3[1] * d)
         if rounded:
             point = (round(point[0]),
                      round(point[1]))
@@ -78,7 +105,7 @@ def graph_from_points(points: set):
     graph = {}
     for p in points:
         graph[p] = []
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for dx, dy in pixel_increments:
             neighbour = (p[0] + dx, p[1] + dy)
             if neighbour in points:
                 graph[p].append(neighbour)
@@ -122,7 +149,7 @@ def move_points_connected(points: set, mapping):
                     new_p = (new_x, new_y)
                     if not new_p in graph:
                         graph[new_p] = []
-                    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    for dx, dy in pixel_increments  :
                         neighbour = (new_p[0] + dx, new_p[1] + dy)
                         if neighbour in graph:
                             graph[new_p].append(neighbour)
@@ -136,7 +163,7 @@ def bfs_unless(starts, unless_what):
 
     while q:
         point = q.popleft()
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for dx, dy in pixel_increments:
             neighbour = (point[0] + dx, point[1] + dy)
             if not neighbour in visited:
                 if not unless_what(neighbour):
@@ -202,3 +229,13 @@ def extract_contours(points: set):
 
     return split_into_components(border_points)
 
+for num_points in [10, 20, 40, 80, 160, 320]:
+    bezier_coefficients[num_points] = []
+    for i in range(num_points):
+        t = i / (num_points - 1)
+        tt = 1 - t
+        a = tt * tt * tt
+        b = tt * tt * t * 3
+        c = tt * t * t * 3
+        d = t * t * t
+        bezier_coefficients[num_points].append((a, b, c, d))

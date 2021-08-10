@@ -104,7 +104,7 @@ class Bild:
                         folded.append(point)
                         if not point in backward_map:
                             original_values = []
-                            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                            for dx, dy in pixel_increments:
                                 neighbour = (point[0] + dx, point[1] + dy)
                                 if neighbour in backward_map:
                                     for p in backward_map[neighbour]:
@@ -128,7 +128,7 @@ class Bild:
 
                     part2_set = set(part2)
                     for point in contour:
-                        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        for dx, dy in pixel_increments:
                                 neighbour = (point[0] + dx, point[1] + dy)
                                 if neighbour in part2_set and \
                                    not neighbour in updates:
@@ -155,8 +155,13 @@ class Bild:
         # resolution = width of a perturbation window
         resolution = resolution // 2 * 2 + 1
 
+        # precalculate real width and height to estimate perturbance scale
+        height = self.nonzero_height()
+        width = self.nonzero_width()
+
         # sample seed points for perturbations from a contour
-        contours = extract_contours(set(self.nonzero))
+        nonzero_pixels = set(self.nonzero)
+        contours = extract_contours(nonzero_pixels)
         if not contours:
             return
 
@@ -167,7 +172,7 @@ class Bild:
         for _ in range(num_samples):
             # make sure all seed points are separated, so that
             # perturbation windows do not overlap
-            tries = 50
+            tries = 10
             seed = None
             while tries:
                 tries -= 1
@@ -191,13 +196,13 @@ class Bild:
             size = 0
             for i in range(resolution // 2 + 1):
                 slice = [(x, seed[1] - i) for x in range(seed[0] - i,
-                                                        seed[0] + i)] +\
+                                                         seed[0] + i)] +\
                         [(x, seed[1] + i) for x in range(seed[0] - i + 1,
-                                                        seed[0] + i + 1)] +\
+                                                         seed[0] + i + 1)] +\
                         [(seed[0] - i, y) for y in range(seed[1] - i + 1,
-                                                        seed[1] + i + 1)] +\
+                                                         seed[1] + i + 1)] +\
                         [(seed[0] + i, y) for y in range(seed[1] - i,
-                                                        seed[1] + i)]
+                                                         seed[1] + i)]
                 min_value = 256
                 max_value = 0
                 for point in slice:
@@ -219,28 +224,31 @@ class Bild:
                     size += 1            
             
             if size < 3:
-                print("Too small window size")
                 continue
-            
-            # find the part of a contour that falls into the window
-            border = set(border)
-            original_contour = set()
-            original_filled = set()
 
+            # empiric formula to scale a future Bezier curve inside the window
+            bezier_scale = min(2 * (2 * size - 1) / max(width, height), 1)
+
+            # find the part of a contour that falls into the window
+            original_contour = set()
+            for point in contour:
+                if seed[0] - size + 1 <= point[0] < seed[0] + size and \
+                   seed[1] - size + 1 <= point[1] < seed[1] + size:
+                    original_contour.add(point)
+
+            # estimate the part of image that falls into the window
+            original_integral = 0
             for x in range(seed[0] - size + 1, seed[0] + size):
                 for y in range(seed[1] - size + 1, seed[1] + size):
-                    point = (x, y)
-                    if point in contour:
-                        original_contour.add(point)
                     if self.pixels[x, y] > 0:
-                        original_filled.add(point)
+                        original_integral += 1
 
             # only allow windows in which a single piece of contour is captured
             if len(split_into_components(original_contour)) > 1:
-                print("Multiple contours in the window")
                 continue
 
             # find two ends of the contour inside the window lying on its border
+            border = set(border)
             graph = graph_from_points(original_contour)
             depths = bfs_distances(graph, [seed])
             start = None
@@ -249,7 +257,6 @@ class Bild:
                     if not start or depths[start] < depth:
                         start = point
             if not start:
-                print("Not found a start")
                 continue
 
             depths = bfs_distances(graph, [start])
@@ -259,17 +266,16 @@ class Bild:
                     if not finish or depths[finish] < depth:
                         finish = point
             if not finish or start == finish:
-                print("Not found a finish")
                 continue
 
             # find a point on the window border that is inside the filled region
 
             inside_points = []
             for point in border:
-                if point in original_filled and not point in original_contour:
+                if self.pixels[point[0], point[1]] > 0 and \
+                   not point in original_contour:
                     inside_points.append(point)
             if not inside_points:
-                print("No seed points for BFS")
                 continue
 
             # now we make a new contour Bezier segment between start and finish
@@ -284,9 +290,7 @@ class Bild:
                     return seed[0] - size + 1 <= point[0] < seed[0] + size and \
                            seed[1] - size + 1 <= point[1] < seed[1] + size
 
-                curve_pixels = set()
-                for t in np.linspace(0, 1, (size * 2 + 1) * 5):
-                    curve_pixels.add(curve.evaluate(t))
+                curve_pixels = curve.calculate(num_points=(size * 2 + 1) * 5)
 
                 # fill the correct area bounded by the curve and the window
                 starts = set(inside_points)
@@ -303,66 +307,74 @@ class Bild:
                 return filled.union(curve_pixels)
 
             samples = []
-            tries = 30
+            tries = 10
             best_curve = None
             best_integral = None
             while tries:
                 tries -= 1
                 P1 = random.choice(sampling_area)
                 P2 = random.choice(sampling_area)
-                if size > min(self.h, self.w) / 20:
-                    P1 = (P1[0] / 2 + start[0] / 2,
-                        P1[1] / 2 + start[1] / 2)
-                    P2 = (P2[0] / 2 + finish[0] / 2,
-                        P2[1] / 2 + finish[1] / 2)
+                P1 = (P1[0] * bezier_scale + start[0] * (1 - bezier_scale),
+                      P1[1] * bezier_scale + start[1] * (1 - bezier_scale))
+                P2 = (P2[0] * bezier_scale + finish[0] * (1 - bezier_scale),
+                      P2[1] * bezier_scale + finish[1] * (1 - bezier_scale))
                 curve = Bezier(start, P1, P2, finish)
                 integral = len(apply_new_curve(curve))
-                if integral >= len(original_filled):
-                    if not best_integral or integral < best_integral:
+                if integral >= original_integral or \
+                   abs(integral - original_integral) <= integral_tolerance:
+                    if not best_integral or \
+                       abs(integral - original_integral) < \
+                       abs(best_integral - original_integral):
                         best_curve, best_integral = curve, integral
             if not best_curve:
-                print("Not a single curve with big enough integral")
                 continue
 
             # if the filled area is too large, shrink it by scaling the curve
             # but first check if the smallest possible curve gives smaller area
             
-            integral = len(original_filled)
             min_curve = Bezier(start, start, finish, finish)
-            if len(apply_new_curve(min_curve)) > integral + integral_tolerance:
-                print("Even straight line gives too big integral")
+            if len(apply_new_curve(min_curve)) > \
+               original_integral + integral_tolerance:
                 continue
 
-            min_factor = 0
-            max_factor = 1
-            result = []
-            while max_factor - min_factor > 0.01:
-                factor = (min_factor + max_factor) / 2
-                curve = Bezier(
-                      best_curve.p0,
-                      (best_curve.p0[0] + (best_curve.p1[0] - best_curve.p0[0]) * factor,
-                       best_curve.p0[1] + (best_curve.p1[1] - best_curve.p0[1]) * factor),
-                      (best_curve.p3[0] + (best_curve.p2[0] - best_curve.p3[0]) * factor,
-                       best_curve.p3[1] + (best_curve.p2[1] - best_curve.p3[1]) * factor),
-                      best_curve.p3)
-                filled = apply_new_curve(curve)
-                if abs(len(filled) - integral) <= integral_tolerance:
-                    result = filled
-                    break
-                if len(filled) > integral + integral_tolerance:
-                    max_factor = factor
-                else:
-                    min_factor = factor
-            if not result:
-                print("Binary search failed")
-                continue
+            if abs(best_integral - original_integral) <= integral_tolerance:
+                result = apply_new_curve(best_curve)
+            else:
+                # try to shrink the curve
+                min_factor = 0
+                max_factor = 1
+                result = set()
+                while max_factor - min_factor > 0.01:
+                    factor = (min_factor + max_factor) / 2
+                    curve = Bezier(
+                        best_curve.p0,
+                        (best_curve.p0[0] + (best_curve.p1[0] - best_curve.p0[0]) * factor,
+                        best_curve.p0[1] + (best_curve.p1[1] - best_curve.p0[1]) * factor),
+                        (best_curve.p3[0] + (best_curve.p2[0] - best_curve.p3[0]) * factor,
+                        best_curve.p3[1] + (best_curve.p2[1] - best_curve.p3[1]) * factor),
+                        best_curve.p3)
+                    filled = apply_new_curve(curve)
+                    if abs(len(filled) - original_integral) <= integral_tolerance:
+                        result = filled
+                        break
+                    if len(filled) > original_integral + integral_tolerance:
+                        max_factor = factor
+                    else:
+                        min_factor = factor
+                if not result:
+                    continue
             
             for x in range(seed[0] - size + 1, seed[0] + size):
                 for y in range(seed[1] - size + 1, seed[1] + size):
                     if (x, y) in result:
-                        self.pixels[x, y] = 200
+                        self.pixels[x, y] = nonzero_value
+                        nonzero_pixels.add((x, y))
                     else:
                         self.pixels[x, y] = 0
+                        if (x, y) in nonzero_pixels:
+                            nonzero_pixels.remove((x, y))
+
+        self.nonzero = list(nonzero_pixels)
 
     def center(self):
         deltax = (self.h - self.x_min() - self.x_max() - 1) // 2
@@ -384,6 +396,12 @@ class Bild:
 
     def y_max(self):
         return max(self.nonzero, key=lambda p: p[1])[1]
+
+    def nonzero_height(self):
+        return self.x_max() - self.x_min()
+
+    def nonzero_width(self):
+        return self.y_max() - self.y_min()
 
 
 def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_folding_bias=0.0):
@@ -452,6 +470,7 @@ def main():
         image = seed.copy()
         image.fold(0.2, xy_axis_bias=True)
         image.center()
+        image.perturb(10, 20, 5)
         data.append(image)
 
         h = max(h, image.x_max() - image.x_min() + 1)
@@ -464,7 +483,6 @@ def main():
 
     for i in range(len(data)):
         image = data[i]
-        image.perturb(20, 20, 5)
         saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
                                                          (image.h - h) // 2,
                                                          image.w - (image.w - w + 1) // 2,
