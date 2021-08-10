@@ -91,6 +91,24 @@ def graph_from_points(points: set):
                 graph[p].append(neighbour)
     return graph
 
+def dfs(graph: dict, start, shuffle_neigbours=False):
+    depths = {}
+
+    def dfs_recursion(current, depth=0, previous=None):
+        depths[current] = depth
+        neighbours = graph[start]
+        if shuffle_neigbours:
+            neighbours = random.shuffle(neighbours)
+            
+        for neighbour in neighbours:
+            if neighbour != previous:
+                dfs_recursion(neighbour, depth=depth + 1, previous=neighbour)
+    
+    dfs_recursion(start)
+
+    return depths
+    
+
 def move_points_connected(points: set, mapping):
     original_graph = graph_from_points(points)
     graph = {}
