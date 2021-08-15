@@ -404,8 +404,13 @@ class Bild:
         return self.y_max() - self.y_min()
 
 
-def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_folding_bias=0.0):
-    seed = Bild(Image.open(input_img)
+def perform_folding(input_filename, num_samples,
+                    max_fold_count=3, min_fold_area=0.2, xy_folding_bias=0.0,
+                    save_images=True, folder=".",
+                    perturb_after_each_fold=False, perturb_after_all_folds=False,
+                    perturbation_samples=10,
+                    perturbation_scale=20, perturbation_precision=5):
+    seed = Bild(Image.open(input_filename)
                      .resize((200, 200), resample=Image.NEAREST)
                      .convert('L'))
 
@@ -415,13 +420,17 @@ def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_
 
     data = [seed]
 
-    for i in range(num_examples):
+    for i in range(num_samples):
         while True:
             seed = random.choice(data)
             if seed.foldcount < max_fold_count:
                 break
         image = seed.copy()
         image.fold(threshold=min_fold_area, xy_axis_bias=xy_folding_bias)
+        if perturb_after_each_fold:
+            image.perturb(num_samples=perturbation_samples,
+                          resolution=perturbation_scale,
+                          integral_tolerance=perturbation_precision)
         image.center()
         data.append(image)
 
@@ -429,69 +438,43 @@ def performe_folding(input_img, num_examples, max_fold_count, min_fold_area, xy_
         w = max(w, image.y_max() - image.y_min() + 1)
         print(".", end='', flush=True)
 
+    if perturb_after_all_folds:
+        print("\nadding noize", end='', flush=True)
+        for image in data:
+            image.perturb(num_samples=perturbation_samples,
+                          resolution=perturbation_scale,
+                          integral_tolerance=perturbation_precision)
+            image.center()
+            h = max(h, image.x_max() - image.x_min() + 1)
+            w = max(w, image.y_max() - image.y_min() + 1)
+            print(".", end='', flush=True)
+        print("done", end='', flush=True)
+
     size = max(h, w)
     h = 1 << (size - 1).bit_length()
     w = h
 
-    fin_data=[]
+    print("\nreshaping...", end='', flush=True)
+
+    output_data=[]
     for i in range(len(data)):
         image = data[i]
-        saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
-                                                         (image.h - h) // 2,
-                                                         image.w - (image.w - w + 1) // 2,
-                                                         image.h - (image.h - h + 1) // 2))
-        saved.save("output/image%d.png" % i)
-        fin_data.append(np.array(saved))
+        x_min = (image.h - h) // 2
+        x_max = image.h - (image.h - h + 1) // 2
+        y_min = (image.w - w) // 2
+        y_max = image.w - (image.w - w + 1) // 2
+        pixels = image.pixels[x_min:x_max, y_min:y_max]
+        output_data.append(pixels)
+        if save_images:
+            Image.fromarray(pixels, 'L')\
+                 .save("%s/image%d.png" % (folder, i))
 
-    print(len(data))
-    return fin_data
-
-
+    print("done\n%d" % len(data), flush=True)
+    return output_data
 
 def main():
-
-    #folded_imgs=performe_folding("input/unfolded.png", 100)
-
-    seed = Bild(Image.open("input/unfolded.png")
-                     .resize((200, 200), resample=Image.NEAREST)
-                     .convert('L'))
-
-    seed.center()
-    h = seed.x_max() - seed.x_min() + 1
-    w = seed.y_max() - seed.y_min() + 1
-
-    data = [seed]
-
-    for i in range(100):
-        while True:
-            seed = random.choice(data)
-            if seed.foldcount < 3:
-                break
-        image = seed.copy()
-        image.fold(0.2, xy_axis_bias=True)
-        image.center()
-        image.perturb(10, 20, 5)
-        data.append(image)
-
-        h = max(h, image.x_max() - image.x_min() + 1)
-        w = max(w, image.y_max() - image.y_min() + 1)
-        print(".", end='', flush=True)
-
-    size = max(h, w)
-    h = 1 << (size - 1).bit_length()
-    w = h
-
-    for i in range(len(data)):
-        image = data[i]
-        saved = Image.fromarray(image.pixels, 'L').crop(((image.w - w) // 2,
-                                                         (image.h - h) // 2,
-                                                         image.w - (image.w - w + 1) // 2,
-                                                         image.h - (image.h - h + 1) // 2))
-        saved.save("output/image%d.png" % i)
-
-    print(len(data))
-
-
+    perform_folding("input/unfolded.png", num_samples=100, folder="./output/",
+                    xy_folding_bias=1.0, perturb_after_each_fold=True)
 
 if __name__== "__main__":
   main()
