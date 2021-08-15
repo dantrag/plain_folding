@@ -35,7 +35,7 @@ def main():
         p2p= np.concatenate((d_img,c_img),axis=1)
         pix2pix_data.append(p2p)
 
-    folder_name="unfolding_" + str(num_examples) + "_fc_" + str(max_fold_count) + "_af_" + str(min_area_folding).replace(".","p") + ("_noize" if perturb else "")
+    folder_name="unfolding_color_" + str(num_examples) + "_fc_" + str(max_fold_count) + "_af_" + str(min_area_folding).replace(".","p") + ("_noize" if perturb else "")
 
     #save in folder sructure as grayscale image
     if not os.path.exists(folder_name):
