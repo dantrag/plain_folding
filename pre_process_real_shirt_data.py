@@ -10,18 +10,22 @@ import pickle
 def mask_shirt(img_org, dim):
     hsv = cv2.cvtColor(img_org, cv2.COLOR_BGR2HSV)
     # Threshold of white in HSV space
-    lower_blue = np.array([0, 0, 0])
-    upper_blue = np.array([255, 230, 255])
+    lower_blue = np.array([0, 0, 60])
+    upper_blue = np.array([255, 255, 255])
     # preparing the mask to overlay
-    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+    mask = cv2.inRange(hsv, lower_blue, upper_blue)    
 
     # The black region in the mask has the value of 0,
     # so when multiplied with original image removes all non-blue regions
-    result = cv2.bitwise_and(img_org, img_org, mask = mask)
-    result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
-    gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    # result = cv2.bitwise_and(img_org, img_org, mask = mask)
+    # result = cv2.cvtColor(result, cv2.COLOR_HSV2BGR)
+    # cv2.imshow("mask", result)
+    # cv2.waitKey(0)
+    # gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+    # cv2.imshow("mask", gray)
+    # cv2.waitKey(0)
     #find contour
-    ret,thresh = cv2.threshold(gray,50,255,0)
+    ret,thresh = cv2.threshold(mask,50,255,0)
     contours,hierarchy = cv2.findContours(thresh, 1, 2)
     #find the biggest area
     cnt = max(contours, key = cv2.contourArea)
@@ -43,15 +47,16 @@ def mask_shirt(img_org, dim):
 
 
 def main():
-    #read in dataset
-    dataset_path="datasets/shirt_dataset_20191217_1050_20200130_1612"
     dim=(256,256)
+
+    #read in dataset
+    dataset_path="datasets/shirt_dataset_20191217_1050_20200130_1612"    
     file = open(dataset_path+ '.pkl','rb')
     dataset = pickle.load(file)
     file.close()
 
     unfolded_real=dataset[0][0]
-    unfolded_real_mask=(mask_shirt(unfolded_real, dim)*255).astype('uint')
+    unfolded_real_mask=mask_shirt(unfolded_real, dim)*10
 
     cv2.imwrite("input/unfolded_real.png", unfolded_real)
     cv2.imwrite("input/unfolded_real_mask.png", unfolded_real_mask)
@@ -66,6 +71,23 @@ def main():
 
     with open("datasets/cgan_dataset_real_test.pkl", 'wb') as f:
         pickle.dump(test_data, f)
+
+    #make color tshirt real dataset
+    img_color = cv2.imread('rgb/0000.png')
+    unfolded_real_color_mask=mask_shirt(img_color, dim)*10
+
+    cv2.imwrite("input/unfolded_real_color.png", img_color)
+    cv2.imwrite("input/unfolded_real_color_mask.png", unfolded_real_color_mask) 
+
+    path, dirs, files = next(os.walk("rgb"))
+    test_data=[]
+    for file in files:
+        img_color = cv2.imread('rgb/'+file)
+        test_data.append((cv2.resize(img_color, dim, interpolation = cv2.INTER_AREA),mask_shirt(img_color, dim)))
+
+    with open("datasets/cgan_dataset_real_color_test.pkl", 'wb') as f:
+        pickle.dump(test_data, f)
+
 
 
 
