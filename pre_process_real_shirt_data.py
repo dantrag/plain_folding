@@ -4,8 +4,8 @@ import numpy as np
 import random
 import cv2
 import pickle
-
-
+from folding import Bild
+from PIL import Image
 
 def mask_shirt(img_org, dim):
     hsv = cv2.cvtColor(img_org, cv2.COLOR_BGR2HSV)
@@ -83,7 +83,10 @@ def main():
     test_data=[]
     for file in files:
         img_color = cv2.imread('rgb/'+file)
-        test_data.append((cv2.resize(img_color, dim, interpolation = cv2.INTER_AREA),mask_shirt(img_color, dim)))
+        img_mask = mask_shirt(img_color, dim)
+        img = Bild(Image.fromarray(img_mask, 'L'))
+        img.center()
+        test_data.append((cv2.resize(img_color, dim, interpolation = cv2.INTER_AREA),img.pixels))
 
     with open("datasets/cgan_dataset_real_color_test.pkl", 'wb') as f:
         pickle.dump(test_data, f)
